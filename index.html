@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="매수점수표">
+<meta name="theme-color" content="#0f1115">
+<title>매수 점수표</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Serif:ital,wght@1,300;1,400&display=swap" rel="stylesheet">
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  :root {
+    --bg: #0f1115;
+    --surface: #1a1d24;
+    --surface-2: #22262f;
+    --line: #2a2f3a;
+    --line-strong: #3a4150;
+    --ink-1: #f5f5f4;
+    --ink-2: #a8afbd;
+    --ink-3: #6b7280;
+    --ink-4: #4a5161;
+    --accent: #ff6b35;
+    --accent-glow: rgba(255, 107, 53, 0.15);
+    --grade-s: #ff6b35;
+    --grade-a: #4a90e2;
+    --grade-b: #6b7280;
+    --grade-c: #3a4150;
+    --approve: #10b981;
+    --approve-bg: rgba(16, 185, 129, 0.12);
+    --approve-glow: rgba(16, 185, 129, 0.3);
+    --reject: #64748b;
+    --font-kr: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-num: 'IBM Plex Sans', -apple-system, sans-serif;
+    --font-serif: 'IBM Plex Serif', serif;
+    
+    /* iPhone safe area */
+    --safe-top: env(safe-area-inset-top);
+    --safe-bottom: env(safe-area-inset-bottom);
+    --safe-left: env(safe-area-inset-left);
+    --safe-right: env(safe-area-inset-right);
+  }
+
+  html, body {
+    background: var(--bg);
+    color: var(--ink-1);
+    font-family: var(--font-kr);
+    font-weight: 400;
+    line-height: 1.5;
+    letter-spacing: -0.01em;
+    -webkit-font-smoothing: antialiased;
+    overscroll-behavior-y: contain;
+  }
+
+  body {
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding: calc(20px + var(--safe-top)) 16px calc(20px + var(--safe-bottom));
+    background-image: 
+      radial-gradient(circle at 20% 0%, rgba(255, 107, 53, 0.08) 0%, transparent 50%),
+      radial-gradient(circle at 80% 100%, rgba(74, 144, 226, 0.05) 0%, transparent 50%);
+  }
+
+  /* ============ HEADER ============ */
+  .header {
+    margin-bottom: 20px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+
+  .header-kicker {
+    font-family: var(--font-num);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  .header-date {
+    font-family: var(--font-num);
+    font-size: 11px;
+    color: var(--ink-3);
+    letter-spacing: 0.05em;
+  }
+
+  .header-title {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-weight: 300;
+    font-size: 19px;
+    letter-spacing: -0.02em;
+    color: var(--ink-1);
+    line-height: 1.4;
+    margin-bottom: 4px;
+  }
+
+  .header-subtitle {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-weight: 300;
+    font-size: 14px;
+    color: var(--ink-2);
+    line-height: 1.5;
+  }
+
+  /* ============ STICKY SCORE (상단 고정) ============ */
+  .sticky-score {
+    position: sticky;
+    top: calc(var(--safe-top) + 10px);
+    z-index: 100;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 20px;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    background: rgba(26, 29, 36, 0.85);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .sticky-score-label {
+    font-family: var(--font-num);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+
+  .sticky-score-number {
+    font-family: var(--font-num);
+    font-size: 42px;
+    font-weight: 300;
+    line-height: 1;
+    letter-spacing: -0.03em;
+    color: var(--ink-1);
+    font-feature-settings: 'tnum' 1;
+    transition: color 0.4s;
+  }
+
+  .sticky-score-number.approved {
+    color: var(--approve);
+    text-shadow: 0 0 20px var(--approve-glow);
+  }
+
+  .sticky-score-of {
+    font-family: var(--font-num);
+    font-size: 11px;
+    color: var(--ink-4);
+    margin-top: 2px;
+  }
+
+  .sticky-status {
+    text-align: right;
+  }
+
+  .sticky-status-text {
+    font-family: var(--font-num);
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin-bottom: 4px;
+  }
+
+  .sticky-status-value {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink-3);
+    letter-spacing: -0.01em;
+    transition: color 0.3s;
+  }
+
+  .sticky-status-value.approved {
+    color: var(--approve);
+  }
+
+  /* Sticky progress bar */
+  .sticky-progress {
+    grid-column: 1 / -1;
+    margin-top: 10px;
+    height: 3px;
+    background: var(--line);
+    border-radius: 2px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .sticky-progress-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(to right, var(--ink-3), var(--ink-1));
+    transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1), background 0.4s;
+    border-radius: 2px;
+  }
+
+  .sticky-progress-fill.approved {
+    background: linear-gradient(to right, var(--approve), #34d399);
+  }
+
+  .sticky-progress-threshold {
+    position: absolute;
+    top: -3px;
+    bottom: -3px;
+    width: 1px;
+    background: var(--accent);
+    left: 76.2%;
+  }
+
+  /* ============ SCORING CARDS ============ */
+  .scoring {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .group-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .group-label {
+    padding: 14px 18px 10px;
+    font-family: var(--font-num);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent);
+    background: linear-gradient(to right, var(--accent-glow), transparent);
+    border-left: 2px solid var(--accent);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .item-card {
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .item-card:last-child {
+    border-bottom: none;
+  }
+
+  .item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+    gap: 12px;
+  }
+
+  .item-title {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .item-category {
+    font-family: var(--font-num);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin-bottom: 4px;
+  }
+
+  .item-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--ink-1);
+    letter-spacing: -0.01em;
+    line-height: 1.3;
+    margin-bottom: 4px;
+  }
+
+  .item-note {
+    font-size: 12px;
+    color: var(--ink-3);
+    line-height: 1.4;
+  }
+
+  .item-score {
+    font-family: var(--font-num);
+    font-size: 22px;
+    font-weight: 500;
+    color: var(--ink-2);
+    letter-spacing: -0.02em;
+    line-height: 1;
+    flex-shrink: 0;
+    min-width: 50px;
+    text-align: right;
+    transition: color 0.3s;
+    font-feature-settings: 'tnum' 1;
+  }
+
+  .item-score.active {
+    color: var(--ink-1);
+    font-weight: 600;
+  }
+
+  .item-score-max {
+    font-size: 10px;
+    color: var(--ink-4);
+    font-weight: 400;
+    margin-left: 2px;
+  }
+
+  /* Grade buttons - 모바일 최적화 큰 버튼 */
+  .grades {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+
+  .grade {
+    height: 44px;
+    border: 1.5px solid var(--line-strong);
+    background: var(--surface-2);
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: var(--font-num);
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--ink-3);
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    letter-spacing: 0.05em;
+    touch-action: manipulation;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  .grade:active {
+    transform: scale(0.95);
+  }
+
+  .grade.active {
+    transform: scale(1);
+  }
+
+  .grade.active[data-grade="S"] {
+    background: var(--grade-s);
+    border-color: var(--grade-s);
+    color: white;
+    box-shadow: 0 0 16px var(--accent-glow);
+  }
+
+  .grade.active[data-grade="A"] {
+    background: var(--grade-a);
+    border-color: var(--grade-a);
+    color: white;
+  }
+
+  .grade.active[data-grade="B"] {
+    background: var(--grade-b);
+    border-color: var(--grade-b);
+    color: white;
+  }
+
+  .grade.active[data-grade="C"] {
+    background: var(--grade-c);
+    border-color: var(--grade-c);
+    color: var(--ink-2);
+  }
+
+  /* ============ PANELS (하단) ============ */
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 20px 18px;
+    margin-top: 16px;
+  }
+
+  .panel-title {
+    font-family: var(--font-num);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 16px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  /* Input */
+  .input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .input-group + .input-group {
+    margin-top: 16px;
+  }
+
+  .input-label {
+    font-family: var(--font-num);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+
+  .input-field {
+    background: var(--surface-2);
+    border: 1px solid var(--line-strong);
+    border-radius: 8px;
+    padding: 14px 16px;
+    font-family: var(--font-num);
+    font-size: 17px;
+    font-weight: 500;
+    color: var(--ink-1);
+    transition: border-color 0.2s;
+    letter-spacing: 0.02em;
+    width: 100%;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  .input-field:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+
+  .input-field::placeholder {
+    color: var(--ink-4);
+    font-weight: 400;
+  }
+
+  /* Checklist */
+  .check-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .check-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 0;
+    cursor: pointer;
+    font-size: 15px;
+    color: var(--ink-2);
+    transition: color 0.2s;
+    -webkit-user-select: none;
+    user-select: none;
+    touch-action: manipulation;
+  }
+
+  .check-item:active {
+    opacity: 0.7;
+  }
+
+  .check-item + .check-item {
+    border-top: 1px solid var(--line);
+  }
+
+  .check-item input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 22px;
+    height: 22px;
+    border: 1.5px solid var(--line-strong);
+    border-radius: 5px;
+    cursor: pointer;
+    position: relative;
+    background: transparent;
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+
+  .check-item input[type="checkbox"]:checked {
+    background: var(--approve);
+    border-color: var(--approve);
+  }
+
+  .check-item input[type="checkbox"]:checked::after {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 6px;
+    width: 6px;
+    height: 11px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+  }
+
+  .check-item.checked .check-label {
+    color: var(--ink-1);
+    text-decoration: line-through;
+    text-decoration-color: var(--ink-4);
+    text-decoration-thickness: 1px;
+  }
+
+  .check-number {
+    font-family: var(--font-num);
+    font-size: 11px;
+    color: var(--ink-4);
+    font-weight: 500;
+    min-width: 24px;
+    letter-spacing: 0.05em;
+  }
+
+  .check-label {
+    flex: 1;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+  }
+
+  /* ============ ACTIONS ============ */
+  .actions {
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid var(--line);
+    display: flex;
+    justify-content: center;
+  }
+
+  .reset-btn {
+    width: 100%;
+    padding: 16px;
+    background: var(--surface);
+    color: var(--ink-3);
+    border: 1px solid var(--line-strong);
+    border-radius: 10px;
+    cursor: pointer;
+    font-family: var(--font-num);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    transition: all 0.2s;
+    touch-action: manipulation;
+  }
+
+  .reset-btn:active {
+    background: var(--surface-2);
+    border-color: var(--accent);
+    color: var(--accent);
+    transform: scale(0.98);
+  }
+
+  .mantra {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: 12px;
+    font-weight: 300;
+    color: var(--ink-3);
+    text-align: center;
+    margin-top: 24px;
+    padding: 0 20px;
+    line-height: 1.6;
+  }
+
+  /* iPhone 노치 대응 */
+  @supports (padding: max(0px)) {
+    body {
+      padding-left: max(16px, var(--safe-left));
+      padding-right: max(16px, var(--safe-right));
+    }
+  }
+
+  /* iPhone 스크롤 바운스 방지 */
+  html {
+    overscroll-behavior: none;
+  }
+
+  /* 탭 하이라이트 제거 */
+  a, button, .grade, .check-item, .item-card {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* 큰 화면 (태블릿) 대응 */
+  @media (min-width: 768px) {
+    body {
+      max-width: 640px;
+      margin: 0 auto;
+      padding-left: 24px;
+      padding-right: 24px;
+    }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="header-top">
+    <div class="header-kicker">Buy Score · Mobile</div>
+    <div class="header-date" id="currentDate">—</div>
+  </div>
+  <h1 class="header-title">"원칙은 나를 지키는 법이다."</h1>
+  <p class="header-subtitle">"물결이 곧 길이다."</p>
+</header>
+
+<!-- STICKY SCORE (상단 고정) -->
+<div class="sticky-score">
+  <div>
+    <div class="sticky-score-label">Score</div>
+    <div class="sticky-score-number" id="totalScore">0</div>
+    <div class="sticky-score-of">of 105</div>
+  </div>
+  <div></div>
+  <div class="sticky-status">
+    <div class="sticky-status-text">Status</div>
+    <div class="sticky-status-value" id="statusValue">대기</div>
+  </div>
+  <div class="sticky-progress">
+    <div class="sticky-progress-fill" id="progressFill"></div>
+    <div class="sticky-progress-threshold"></div>
+  </div>
+</div>
+
+<!-- SCORING CARDS -->
+<section class="scoring">
+
+  <!-- GROUP 1 -->
+  <div class="group-card">
+    <div class="group-label">01 · Core Factor</div>
+    <div class="item-card" data-item="wave" data-max="60" data-scores='{"S":60,"A":40,"B":20,"C":0}'>
+      <div class="item-header">
+        <div class="item-title">
+          <div class="item-category">핵심요인</div>
+          <div class="item-name">물결의 파동</div>
+          <div class="item-note">큰물결·작은물결 / 상승 1파초기 or 시간대별 눌림</div>
+        </div>
+        <div class="item-score">
+          <span data-score-display>0</span>
+          <span class="item-score-max">/60</span>
+        </div>
+      </div>
+      <div class="grades">
+        <button class="grade" data-grade="S">S</button>
+        <button class="grade" data-grade="A">A</button>
+        <button class="grade" data-grade="B">B</button>
+        <button class="grade" data-grade="C">C</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- GROUP 2 -->
+  <div class="group-card">
+    <div class="group-label">02 · Market Force</div>
+    <div class="item-card" data-item="money" data-max="15" data-scores='{"S":15,"A":10,"B":5,"C":0}'>
+      <div class="item-header">
+        <div class="item-title">
+          <div class="item-category">시장 주도력</div>
+          <div class="item-name">돈의 흐름</div>
+          <div class="item-note">강한 섹터 / 주도 섹터 및 돈의 쏠림 확인</div>
+        </div>
+        <div class="item-score">
+          <span data-score-display>0</span>
+          <span class="item-score-max">/15</span>
+        </div>
+      </div>
+      <div class="grades">
+        <button class="grade" data-grade="S">S</button>
+        <button class="grade" data-grade="A">A</button>
+        <button class="grade" data-grade="B">B</button>
+        <button class="grade" data-grade="C">C</button>
+      </div>
+    </div>
+    <div class="item-card" data-item="leader" data-max="10" data-scores='{"S":10,"A":7,"B":4,"C":0}'>
+      <div class="item-header">
+        <div class="item-title">
+          <div class="item-category">종목의 끼</div>
+          <div class="item-name">최근 주도주 이력</div>
+          <div class="item-note">5색 / 최근 상한가 및 주도주 이력</div>
+        </div>
+        <div class="item-score">
+          <span data-score-display>0</span>
+          <span class="item-score-max">/10</span>
+        </div>
+      </div>
+      <div class="grades">
+        <button class="grade" data-grade="S">S</button>
+        <button class="grade" data-grade="A">A</button>
+        <button class="grade" data-grade="B">B</button>
+        <button class="grade" data-grade="C">C</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- GROUP 3 -->
+  <div class="group-card">
+    <div class="group-label">03 · External</div>
+    <div class="item-card" data-item="index" data-max="7" data-scores='{"S":7,"A":5,"B":4,"C":0}'>
+      <div class="item-header">
+        <div class="item-title">
+          <div class="item-category">외부 요인</div>
+          <div class="item-name">지수 동조화</div>
+          <div class="item-note">시장 환경 및 지수 위치</div>
+        </div>
+        <div class="item-score">
+          <span data-score-display>0</span>
+          <span class="item-score-max">/7</span>
+        </div>
+      </div>
+      <div class="grades">
+        <button class="grade" data-grade="S">S</button>
+        <button class="grade" data-grade="A">A</button>
+        <button class="grade" data-grade="B">B</button>
+        <button class="grade" data-grade="C">C</button>
+      </div>
+    </div>
+    <div class="item-card" data-item="sector" data-max="5" data-scores='{"S":5,"A":3,"B":2,"C":0}'>
+      <div class="item-header">
+        <div class="item-title">
+          <div class="item-category">외부 요인</div>
+          <div class="item-name">Today 섹터內 위치</div>
+          <div class="item-note">대장부 여부 · 오늘 대장주 확인</div>
+        </div>
+        <div class="item-score">
+          <span data-score-display>0</span>
+          <span class="item-score-max">/5</span>
+        </div>
+      </div>
+      <div class="grades">
+        <button class="grade" data-grade="S">S</button>
+        <button class="grade" data-grade="A">A</button>
+        <button class="grade" data-grade="B">B</button>
+        <button class="grade" data-grade="C">C</button>
+      </div>
+    </div>
+    <div class="item-card" data-item="time" data-max="3" data-scores='{"S":3,"A":2,"B":2,"C":0}'>
+      <div class="item-header">
+        <div class="item-title">
+          <div class="item-category">외부 요인</div>
+          <div class="item-name">시간대 가점</div>
+          <div class="item-note">09:00~09:30 골든타임</div>
+        </div>
+        <div class="item-score">
+          <span data-score-display>0</span>
+          <span class="item-score-max">/3</span>
+        </div>
+      </div>
+      <div class="grades">
+        <button class="grade" data-grade="S">S</button>
+        <button class="grade" data-grade="A">A</button>
+        <button class="grade" data-grade="B">B</button>
+        <button class="grade" data-grade="C">C</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- GROUP 4 -->
+  <div class="group-card">
+    <div class="group-label">04 · Precision</div>
+    <div class="item-card" data-item="search" data-max="3" data-scores='{"S":3,"A":2,"B":1,"C":0}'>
+      <div class="item-header">
+        <div class="item-title">
+          <div class="item-category">정밀 타점</div>
+          <div class="item-name">검색식 & 수급 에너지</div>
+          <div class="item-note">변곡 신호 및 수급</div>
+        </div>
+        <div class="item-score">
+          <span data-score-display>0</span>
+          <span class="item-score-max">/3</span>
+        </div>
+      </div>
+      <div class="grades">
+        <button class="grade" data-grade="S">S</button>
+        <button class="grade" data-grade="A">A</button>
+        <button class="grade" data-grade="B">B</button>
+        <button class="grade" data-grade="C">C</button>
+      </div>
+    </div>
+    <div class="item-card" data-item="entry" data-max="2" data-scores='{"S":2,"A":1.5,"B":1,"C":0}'>
+      <div class="item-header">
+        <div class="item-title">
+          <div class="item-category">정밀 타점</div>
+          <div class="item-name">정밀타점 (오실·스토)</div>
+          <div class="item-note">최종 진입가 결정</div>
+        </div>
+        <div class="item-score">
+          <span data-score-display>0</span>
+          <span class="item-score-max">/2</span>
+        </div>
+      </div>
+      <div class="grades">
+        <button class="grade" data-grade="S">S</button>
+        <button class="grade" data-grade="A">A</button>
+        <button class="grade" data-grade="B">B</button>
+        <button class="grade" data-grade="C">C</button>
+      </div>
+    </div>
+  </div>
+
+</section>
+
+<!-- Risk Management -->
+<div class="panel">
+  <div class="panel-title">Risk Management</div>
+  <div class="input-group">
+    <label class="input-label" for="stoplossInput">손절 가격</label>
+    <input type="text" class="input-field" id="stoplossInput" placeholder="34,334원" inputmode="numeric">
+  </div>
+  <div class="input-group">
+    <label class="input-label" for="holdingInput">홀딩 기준선</label>
+    <input type="text" class="input-field" id="holdingInput" placeholder="20일선 / VWAP / 3일선">
+  </div>
+</div>
+
+<!-- Checklist -->
+<div class="panel">
+  <div class="panel-title">Final Checklist</div>
+  <div class="check-list">
+    <label class="check-item">
+      <input type="checkbox" id="check1">
+      <span class="check-number">01</span>
+      <span class="check-label">매수 점수 80점 이상</span>
+    </label>
+    <label class="check-item">
+      <input type="checkbox" id="check2">
+      <span class="check-number">02</span>
+      <span class="check-label">고점 점수표 70점 미만</span>
+    </label>
+    <label class="check-item">
+      <input type="checkbox" id="check3">
+      <span class="check-number">03</span>
+      <span class="check-label">손절가 설정 완료</span>
+    </label>
+    <label class="check-item">
+      <input type="checkbox" id="check4">
+      <span class="check-number">04</span>
+      <span class="check-label">홀딩 기준선 명시</span>
+    </label>
+    <label class="check-item">
+      <input type="checkbox" id="check5">
+      <span class="check-number">05</span>
+      <span class="check-label">미수 미사용 확인</span>
+    </label>
+  </div>
+</div>
+
+<div class="actions">
+  <button class="reset-btn" onclick="resetAll()">전체 초기화</button>
+</div>
+
+<div class="mantra">The wave is the path.<br>Flow is just a footprint on it.</div>
+
+<script>
+  const MAX_SCORE = 105;
+  const APPROVE_LINE = 80;
+  const grades = {};
+
+  // Date
+  const today = new Date();
+  const dateStr = today.toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\. /g, '.').replace(/\.$/, '');
+  document.getElementById('currentDate').textContent = dateStr;
+
+  // Grade buttons
+  document.querySelectorAll('.item-card[data-item]').forEach(card => {
+    const itemId = card.dataset.item;
+    const scores = JSON.parse(card.dataset.scores);
+    const buttons = card.querySelectorAll('.grade');
+    const scoreDisplay = card.querySelector('[data-score-display]');
+    const itemScore = card.querySelector('.item-score');
+
+    buttons.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const grade = btn.dataset.grade;
+
+        if (btn.classList.contains('active')) {
+          btn.classList.remove('active');
+          delete grades[itemId];
+          scoreDisplay.textContent = '0';
+          itemScore.classList.remove('active');
+        } else {
+          buttons.forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          grades[itemId] = grade;
+          scoreDisplay.textContent = scores[grade];
+          itemScore.classList.add('active');
+        }
+
+        updateTotal();
+        
+        // Haptic feedback (iPhone)
+        if (window.navigator.vibrate) {
+          window.navigator.vibrate(10);
+        }
+      });
+    });
+  });
+
+  function updateTotal() {
+    let total = 0;
+    document.querySelectorAll('.item-card[data-item]').forEach(card => {
+      const itemId = card.dataset.item;
+      const scores = JSON.parse(card.dataset.scores);
+      if (grades[itemId]) {
+        total += scores[grades[itemId]];
+      }
+    });
+
+    const totalEl = document.getElementById('totalScore');
+    const progressFill = document.getElementById('progressFill');
+    const statusValue = document.getElementById('statusValue');
+
+    totalEl.textContent = (total % 1 === 0) ? total : total.toFixed(1);
+
+    const percent = Math.min((total / MAX_SCORE) * 100, 100);
+    progressFill.style.width = percent + '%';
+
+    if (total >= APPROVE_LINE) {
+      totalEl.classList.add('approved');
+      progressFill.classList.add('approved');
+      statusValue.textContent = '진입 승인';
+      statusValue.className = 'sticky-status-value approved';
+      document.getElementById('check1').checked = true;
+      updateCheckClass(document.getElementById('check1'));
+    } else {
+      totalEl.classList.remove('approved');
+      progressFill.classList.remove('approved');
+      statusValue.textContent = total > 0 ? '관망' : '대기';
+      statusValue.className = 'sticky-status-value';
+      document.getElementById('check1').checked = false;
+      updateCheckClass(document.getElementById('check1'));
+    }
+  }
+
+  function updateCheckClass(checkbox) {
+    const parent = checkbox.closest('.check-item');
+    if (checkbox.checked) {
+      parent.classList.add('checked');
+    } else {
+      parent.classList.remove('checked');
+    }
+  }
+
+  document.querySelectorAll('.check-item input[type="checkbox"]').forEach(cb => {
+    cb.addEventListener('change', () => {
+      updateCheckClass(cb);
+      if (window.navigator.vibrate) {
+        window.navigator.vibrate(10);
+      }
+    });
+  });
+
+  // 손절가 천단위 콤마 + 원
+  const stoplossInput = document.getElementById('stoplossInput');
+  stoplossInput.addEventListener('input', (e) => {
+    const numOnly = e.target.value.replace(/[^0-9]/g, '');
+    if (numOnly === '') {
+      e.target.value = '';
+    } else {
+      const formatted = parseInt(numOnly, 10).toLocaleString('ko-KR') + '원';
+      e.target.value = formatted;
+      const cursorPos = formatted.length - 1;
+      try {
+        e.target.setSelectionRange(cursorPos, cursorPos);
+      } catch (err) {}
+    }
+    const cb = document.getElementById('check3');
+    cb.checked = numOnly !== '';
+    updateCheckClass(cb);
+  });
+
+  stoplossInput.addEventListener('focus', (e) => {
+    const val = e.target.value;
+    if (val.endsWith('원')) {
+      const maxPos = val.length - 1;
+      setTimeout(() => {
+        try {
+          e.target.setSelectionRange(maxPos, maxPos);
+        } catch (err) {}
+      }, 0);
+    }
+  });
+
+  // 홀딩 기준선
+  document.getElementById('holdingInput').addEventListener('input', (e) => {
+    const cb = document.getElementById('check4');
+    cb.checked = e.target.value.trim() !== '';
+    updateCheckClass(cb);
+  });
+
+  function resetAll() {
+    if (!confirm('모든 입력을 초기화하시겠습니까?')) return;
+
+    Object.keys(grades).forEach(key => delete grades[key]);
+    document.querySelectorAll('.grade').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('[data-score-display]').forEach(el => el.textContent = '0');
+    document.querySelectorAll('.item-score').forEach(el => el.classList.remove('active'));
+    document.getElementById('stoplossInput').value = '';
+    document.getElementById('holdingInput').value = '';
+    document.querySelectorAll('.check-item input[type="checkbox"]').forEach(cb => {
+      cb.checked = false;
+      updateCheckClass(cb);
+    });
+    updateTotal();
+    
+    if (window.navigator.vibrate) {
+      window.navigator.vibrate([10, 50, 10]);
+    }
+  }
+
+  // iOS 줌 방지
+  document.addEventListener('touchmove', function(e) {
+    if (e.scale && e.scale !== 1) {
+      e.preventDefault();
+    }
+  }, { passive: false });
+
+  // Double tap zoom 방지
+  let lastTouchEnd = 0;
+  document.addEventListener('touchend', function(e) {
+    const now = Date.now();
+    if (now - lastTouchEnd <= 300) {
+      e.preventDefault();
+    }
+    lastTouchEnd = now;
+  }, { passive: false });
+</script>
+</body>
+</html>
