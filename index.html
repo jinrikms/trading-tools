@@ -952,8 +952,44 @@
 </div>
 
 <script>
-  const buyGrades = {};
-  const topValues = {};
+  // ============ 자동 저장/복원 (LocalStorage) ============
+  const STORAGE_KEY = 'tradingTools_buyTop';
+  
+  let savedData = {};
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) savedData = JSON.parse(stored);
+  } catch (e) {
+    console.log('Storage load failed:', e);
+  }
+  
+  // 24시간 지나면 자동 초기화
+  const ONE_DAY = 24 * 60 * 60 * 1000;
+  if (savedData.timestamp && (Date.now() - savedData.timestamp > ONE_DAY)) {
+    savedData = {};
+    localStorage.removeItem(STORAGE_KEY);
+  }
+  
+  const buyGrades = savedData.buyGrades || {};
+  const topValues = savedData.topValues || {};
+  const stoplossValue = savedData.stoplossValue || '';
+  const holdingValue = savedData.holdingValue || '';
+  
+  function saveState() {
+    try {
+      const stoploss = document.getElementById('stoplossInput')?.value || '';
+      const holding = document.getElementById('holdingInput')?.value || '';
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        buyGrades, topValues,
+        stoplossValue: stoploss,
+        holdingValue: holding,
+        timestamp: Date.now()
+      }));
+    } catch (e) {
+      console.log('Storage save failed:', e);
+    }
+  }
+  
   const BUY_APPROVE = 80;
   const TOP_REJECT = 70;
 
@@ -978,6 +1014,18 @@
     const buttons = card.querySelectorAll('.grade');
     const scoreDisplay = card.querySelector('[data-score-display]');
     const itemScore = card.querySelector('.item-score');
+    
+    // 저장된 상태 복원
+    if (buyGrades[itemId]) {
+      const savedGrade = buyGrades[itemId];
+      buttons.forEach(b => {
+        if (b.dataset.grade === savedGrade) {
+          b.classList.add('active');
+          scoreDisplay.textContent = scores[savedGrade];
+          itemScore.classList.add('active');
+        }
+      });
+    }
 
     buttons.forEach(btn => {
       btn.addEventListener('click', (e) => {
@@ -996,6 +1044,7 @@
           itemScore.classList.add('active');
         }
         updateAll();
+        saveState();
         if (window.navigator.vibrate) window.navigator.vibrate(10);
       });
     });
@@ -1008,6 +1057,18 @@
     const buttons = card.querySelectorAll('.toggle-btn');
     const scoreDisplay = card.querySelector('[data-score-display]');
     const itemScore = card.querySelector('.item-score');
+    
+    // 저장된 상태 복원
+    if (topValues[itemId]) {
+      const savedVal = topValues[itemId];
+      buttons.forEach(b => {
+        if (b.dataset.val === savedVal) {
+          b.classList.add('active');
+          scoreDisplay.textContent = (savedVal === 'Y') ? score : 0;
+          itemScore.classList.toggle('active', savedVal === 'Y');
+        }
+      });
+    }
 
     buttons.forEach(btn => {
       btn.addEventListener('click', (e) => {
@@ -1026,6 +1087,7 @@
           itemScore.classList.toggle('active', val === 'Y');
         }
         updateAll();
+        saveState();
         if (window.navigator.vibrate) window.navigator.vibrate(10);
       });
     });
@@ -1073,6 +1135,9 @@
 
   // 손절가 포맷
   const stoplossInput = document.getElementById('stoplossInput');
+  // 저장된 값 복원
+  if (stoplossValue) stoplossInput.value = stoplossValue;
+  
   stoplossInput.addEventListener('input', (e) => {
     const numOnly = e.target.value.replace(/[^0-9]/g, '');
     if (numOnly === '') {
@@ -1083,6 +1148,7 @@
       const cursorPos = formatted.length - 1;
       try { e.target.setSelectionRange(cursorPos, cursorPos); } catch (err) {}
     }
+    saveState();
   });
 
   stoplossInput.addEventListener('focus', (e) => {
@@ -1094,6 +1160,13 @@
       }, 0);
     }
   });
+  
+  // 홀딩 기준선 - 저장된 값 복원
+  const holdingInput = document.getElementById('holdingInput');
+  if (holdingInput && holdingValue) holdingInput.value = holdingValue;
+  if (holdingInput) {
+    holdingInput.addEventListener('input', () => saveState());
+  }
 
   function resetTable(table) {
     if (!confirm(`${table === 'buy' ? '매수' : '고점'} 점수표를 초기화하시겠습니까?`)) return;
@@ -1112,9 +1185,13 @@
       document.querySelectorAll('.item-card[data-table="top"] .item-score').forEach(el => el.classList.remove('active'));
     }
 
+    saveState();
     updateAll();
     if (window.navigator.vibrate) window.navigator.vibrate([10, 50, 10]);
   }
+  
+  // 페이지 로드 시 초기 화면 업데이트
+  updateAll();
 
   // iOS 줌 방지
   document.addEventListener('touchmove', (e) => {
