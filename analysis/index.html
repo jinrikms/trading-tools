@@ -659,11 +659,11 @@
     <div class="masthead-right">
       <div class="verdict-badge" id="verdict">대기</div>
       <div class="cross-link-wrap">
-        <a href="../" class="cross-link" target="_blank" rel="noopener">
+        <a href="../" class="cross-link">
           <span class="cross-link-meta">다음 단계</span>
           <span class="cross-link-text">매수·고점 점수표 →</span>
         </a>
-        <button class="reset-btn" onclick="resetAll()">RESET</button>
+        <button class="reset-btn" onclick="resetAll()">새로 시작</button>
       </div>
     </div>
   </header>
@@ -894,10 +894,40 @@
 </div>
 
 <script>
-  const grades = {};
-  const bonus = {};
-  const indexTone = {};
-  const triggers = {};
+  // ============ 자동 저장/복원 (LocalStorage) ============
+  const STORAGE_KEY = 'tradingTools_domyeon';
+  
+  // 저장된 데이터 로드
+  let savedData = {};
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) savedData = JSON.parse(stored);
+  } catch (e) {
+    console.log('Storage load failed:', e);
+  }
+  
+  // 마지막 저장 시각 (24시간 지나면 자동 초기화)
+  const ONE_DAY = 24 * 60 * 60 * 1000;
+  if (savedData.timestamp && (Date.now() - savedData.timestamp > ONE_DAY)) {
+    savedData = {};
+    localStorage.removeItem(STORAGE_KEY);
+  }
+  
+  const grades = savedData.grades || {};
+  const bonus = savedData.bonus || {};
+  const indexTone = savedData.indexTone || {};
+  const triggers = savedData.triggers || {};
+  
+  function saveState() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        grades, bonus, indexTone, triggers,
+        timestamp: Date.now()
+      }));
+    } catch (e) {
+      console.log('Storage save failed:', e);
+    }
+  }
 
   const today = new Date();
   const dateStr = today.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
@@ -936,6 +966,11 @@
         `;
       }
       
+      // 저장된 상태 복원
+      if (grades[cellNum] === grade) {
+        row.classList.add('active');
+      }
+      
       row.addEventListener('click', (e) => {
         e.stopPropagation();
         if (row.classList.contains('active')) {
@@ -947,6 +982,7 @@
           grades[cellNum] = grade;
         }
         updateTotal();
+        saveState();
       });
       wrap.appendChild(row);
     });
@@ -958,6 +994,10 @@
   document.querySelectorAll('.index-toggle').forEach(toggle => {
     const zone = toggle.dataset.indexZone;
     toggle.querySelectorAll('.index-row').forEach(row => {
+      // 저장된 상태 복원
+      if (indexTone[zone] === row.dataset.val) {
+        row.classList.add('active');
+      }
       row.addEventListener('click', () => {
         const val = row.dataset.val;
         if (row.classList.contains('active')) {
@@ -968,14 +1008,19 @@
           row.classList.add('active');
           indexTone[zone] = val;
         }
+        saveState();
       });
     });
   });
 
   // 진입 트리거
   document.querySelectorAll('.trigger-row').forEach(row => {
+    const k = row.dataset.trigger;
+    // 저장된 상태 복원
+    if (triggers[k]) {
+      row.classList.add('active');
+    }
     row.addEventListener('click', () => {
-      const k = row.dataset.trigger;
       if (row.classList.contains('active')) {
         row.classList.remove('active');
         delete triggers[k];
@@ -984,6 +1029,7 @@
         triggers[k] = true;
       }
       updateTriggerStatus();
+      saveState();
     });
   });
 
@@ -1004,8 +1050,12 @@
 
   // 보조 가점
   document.querySelectorAll('.item[data-bonus]').forEach(item => {
+    const k = item.dataset.bonus;
+    // 저장된 상태 복원
+    if (bonus[k] !== undefined) {
+      item.classList.add('checked');
+    }
     item.addEventListener('click', () => {
-      const k = item.dataset.bonus;
       if (item.classList.contains('checked')) {
         item.classList.remove('checked');
         delete bonus[k];
@@ -1014,6 +1064,7 @@
         bonus[k] = parseFloat(item.dataset.score);
       }
       updateTotal();
+      saveState();
     });
   });
 
@@ -1148,9 +1199,14 @@
     document.querySelectorAll('.index-row').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.trigger-row').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.item').forEach(r => r.classList.remove('checked'));
+    localStorage.removeItem(STORAGE_KEY);
     updateTotal();
     updateTriggerStatus();
   }
+  
+  // 페이지 로드 시 저장된 상태로 초기 화면 업데이트
+  updateTotal();
+  updateTriggerStatus();
 </script>
 </body>
 </html>
