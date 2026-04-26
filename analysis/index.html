@@ -1,1 +1,1156 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HTS 도면 점수표</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@200;300;400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=IBM+Plex+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
 
+  :root {
+    --canvas: #f7f5ef;
+    --paper: #fdfcf7;
+    --paper-shade: #ede9dd;
+    --paper-line: #e0dac8;
+    --ink-1: #1a1a1a;
+    --ink-2: #3a3a3a;
+    --ink-3: #6a6863;
+    --ink-4: #9a9690;
+    --ink-5: #c4bfb3;
+    --accent: #8b1a1a;
+    --accent-soft: #d4a59c;
+    --accent-bg: #f7e8e2;
+    --approve: #2d6a4f;
+    --approve-strong: #1d4d36;
+    --approve-bg: #e3efe7;
+    --gold: #b8893a;
+    --gold-bg: #f5ecdc;
+    --warn: #c2410c;
+    --warn-bg: #fdebd6;
+    --danger: #991b1b;
+    --danger-bg: #fce4e4;
+    --font-kr: 'Pretendard', sans-serif;
+    --font-serif: 'IBM Plex Serif', Georgia, serif;
+    --font-sans: 'IBM Plex Sans', sans-serif;
+    --font-mono: 'IBM Plex Mono', monospace;
+  }
+
+  html, body { height: 100%; overflow: hidden; background: var(--paper-shade); }
+
+  body {
+    font-family: var(--font-kr);
+    color: var(--ink-1);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    background: var(--canvas);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding: 16px 22px 14px;
+  }
+
+  .container { flex: 1; display: flex; flex-direction: column; gap: 12px; min-height: 0; }
+
+  /* MASTHEAD */
+  .masthead {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: end;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--ink-1);
+    flex-shrink: 0;
+    gap: 28px;
+    position: relative;
+  }
+  .masthead::after {
+    content: ''; position: absolute; bottom: -4px; left: 0; right: 0;
+    height: 1px; background: var(--ink-1); opacity: 0.4;
+  }
+  .masthead-left { display: flex; flex-direction: column; gap: 4px; }
+  .meta-line {
+    display: flex; align-items: center; gap: 12px;
+    font-family: var(--font-mono); font-size: 10px;
+    letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-3);
+  }
+  .meta-divider { width: 1px; height: 10px; background: var(--ink-4); }
+  .meta-issue { color: var(--accent); font-weight: 600; }
+  .total-line { display: flex; align-items: baseline; gap: 14px; margin-top: 2px; }
+  .total-label {
+    font-family: var(--font-serif); font-style: italic; font-weight: 300;
+    font-size: 18px; color: var(--ink-3);
+  }
+
+  /* 통합 점수판 + 진행 게이지 */
+  .score-board {
+    margin-top: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .score-display {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+  }
+  .score-stage-label {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-weight: 300;
+    font-size: 18px;
+    color: var(--ink-3);
+    transition: color 0.3s;
+    min-width: 90px;
+  }
+  .score-stage-label.complete {
+    color: var(--accent);
+    font-weight: 400;
+  }
+
+  .stage-progress {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-width: 320px;
+  }
+  .stage-track {
+    height: 3px;
+    background: var(--paper-line);
+    position: relative;
+    overflow: hidden;
+  }
+  .stage-fill {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(to right, var(--accent), var(--gold));
+    transition: width 0.5s ease;
+  }
+  .stage-labels {
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-4);
+  }
+  .stage-mark {
+    transition: all 0.3s;
+  }
+  .stage-mark.active {
+    color: var(--accent);
+    font-weight: 700;
+  }
+  .stage-mark.completed {
+    color: var(--ink-3);
+    font-weight: 600;
+  }
+  /* 7번: 총점 강조 */
+  .total-score {
+    font-family: var(--font-serif);
+    font-size: 64px;
+    font-weight: 400;
+    line-height: 1;
+    color: var(--ink-1);
+    letter-spacing: -0.04em;
+    transition: all 0.4s;
+    font-feature-settings: 'lnum' 1, 'tnum' 1;
+  }
+  .total-score.approved { color: var(--approve); font-weight: 500; }
+  .total-score.strong {
+    color: var(--approve-strong);
+    font-weight: 600;
+    text-shadow: 0 0 30px rgba(45, 106, 79, 0.25);
+    animation: pulse 2.5s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { text-shadow: 0 0 30px rgba(45, 106, 79, 0.25); }
+    50% { text-shadow: 0 0 40px rgba(45, 106, 79, 0.4); }
+  }
+  .total-score.warn { color: var(--warn); }
+  .total-score.danger { color: var(--danger); }
+  .total-of {
+    font-family: var(--font-mono); font-size: 14px;
+    color: var(--ink-4); letter-spacing: 0.05em; font-weight: 500;
+  }
+
+  .masthead-center { text-align: center; }
+  .logo {
+    font-family: var(--font-serif); font-size: 40px; font-weight: 300;
+    line-height: 1; color: var(--ink-1); letter-spacing: -0.02em; margin-bottom: 4px;
+  }
+  .logo .em { font-style: italic; font-weight: 400; }
+  .logo-tagline {
+    font-family: var(--font-serif); font-style: italic; font-size: 13px;
+    color: var(--ink-3); font-weight: 300;
+  }
+
+  .masthead-right {
+    display: flex; flex-direction: column;
+    align-items: flex-end; gap: 10px;
+  }
+
+  /* 6번: 5단계 판정 */
+  .verdict-badge {
+    font-family: var(--font-mono);
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    padding: 9px 20px;
+    color: var(--ink-3);
+    border: 2px solid var(--ink-4);
+    background: var(--paper);
+    transition: all 0.3s;
+    min-width: 160px;
+    text-align: center;
+  }
+  .verdict-badge.danger { color: var(--danger); border-color: var(--danger); background: var(--danger-bg); }
+  .verdict-badge.observe { color: var(--gold); border-color: var(--gold); background: var(--gold-bg); }
+  .verdict-badge.caution { color: var(--warn); border-color: var(--warn); background: var(--warn-bg); }
+  .verdict-badge.approved {
+    color: var(--approve); border-color: var(--approve); background: var(--approve-bg);
+    box-shadow: 0 0 16px rgba(45, 106, 79, 0.2);
+  }
+  .verdict-badge.strong {
+    color: var(--paper); border-color: var(--approve-strong); background: var(--approve-strong);
+    box-shadow: 0 0 24px rgba(29, 77, 54, 0.4); font-weight: 800;
+  }
+
+  .reset-btn {
+    background: transparent; border: none; padding: 4px 0;
+    font-family: var(--font-mono); font-size: 10px; font-weight: 500;
+    letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink-3);
+    cursor: pointer; transition: color 0.15s; border-bottom: 1px solid var(--ink-4);
+  }
+  .reset-btn:hover { color: var(--accent); border-color: var(--accent); }
+
+  /* 크로스 링크 (매수/고점 점수표로) */
+  .cross-link-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+  }
+  .cross-link {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+    padding: 8px 14px;
+    background: var(--paper);
+    border: 1px solid var(--ink-3);
+    text-decoration: none;
+    transition: all 0.2s;
+    cursor: pointer;
+  }
+  .cross-link:hover {
+    background: var(--ink-1);
+    border-color: var(--ink-1);
+  }
+  .cross-link:hover .cross-link-text,
+  .cross-link:hover .cross-link-meta {
+    color: var(--paper);
+  }
+  .cross-link-meta {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-4);
+    transition: color 0.2s;
+  }
+  .cross-link-text {
+    font-family: var(--font-serif);
+    font-size: 14px;
+    font-weight: 400;
+    font-style: italic;
+    color: var(--ink-1);
+    letter-spacing: -0.01em;
+    transition: color 0.2s;
+  }
+
+  /* MAIN GRID */
+  .main {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 250px;
+    gap: 20px;
+    min-height: 0;
+  }
+
+  .table-section { display: flex; flex-direction: column; min-height: 0; }
+  .section-label {
+    font-family: var(--font-mono); font-size: 9px; font-weight: 600;
+    letter-spacing: 0.25em; text-transform: uppercase; color: var(--ink-4);
+    margin-bottom: 6px; padding-bottom: 5px;
+    border-bottom: 1px dotted var(--ink-4); flex-shrink: 0;
+    display: flex; justify-content: space-between; align-items: baseline;
+  }
+  .section-meta {
+    font-family: var(--font-serif); font-style: italic; font-weight: 300;
+    font-size: 11px; color: var(--ink-4); text-transform: none; letter-spacing: 0;
+  }
+
+  /* 1번: 비율 차등 (이미지 비율 기준) */
+  /* 1열: 라벨/기능 (넉넉히), 2열: 메인 (가장 큼), 3-5열: 보조 */
+  .hts-grid {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1.4fr 1.6fr 0.85fr 0.95fr 1fr;
+    grid-template-rows: repeat(4, 1fr);
+    border: 1px solid var(--ink-2);
+    background: var(--paper);
+    min-height: 0;
+  }
+
+  .cell {
+    border-right: 1px solid var(--paper-line);
+    border-bottom: 1px solid var(--paper-line);
+    padding: 8px 12px 6px;
+    position: relative;
+    min-height: 0;
+    overflow: hidden;
+    transition: background 0.2s;
+    display: flex;
+    flex-direction: column;
+  }
+  .cell:nth-child(5n) { border-right: none; }
+  .cell:nth-last-child(-n+5) { border-bottom: none; }
+  .cell:hover { background: var(--gold-bg); }
+
+  .row-label {
+    background: var(--paper-shade);
+    border-right: 2px solid var(--ink-2);
+    padding: 8px 10px 6px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition: background 0.2s;
+    min-height: 0;
+    opacity: 0.55;
+  }
+  .row-label:hover {
+    opacity: 0.8;
+  }
+  .row-label.row-ra { color: var(--accent); background: var(--accent-bg); }
+
+  /* Zone1 기능 셀 (지수 동조화, 진입 트리거가 들어가는 자리) */
+  .zone1-functional {
+    border-right: 2px solid var(--ink-2);
+    background: var(--paper);
+    padding: 8px 10px 6px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition: background 0.2s;
+    min-height: 0;
+  }
+  .zone1-functional:hover { background: var(--gold-bg); }
+  /* zone1-label, cell-number, cell-divider 모두 숨김 (사용자가 번호 다 외움) */
+
+  .cell-header {
+    display: flex; align-items: baseline; gap: 7px;
+    margin-bottom: 6px; padding-bottom: 4px; flex-shrink: 0;
+  }
+  .cell-number, .zone1-label, .cell-divider {
+    display: none;
+  }
+  .cell-title {
+    font-family: var(--font-kr); font-size: 12.5px; font-weight: 600;
+    color: var(--ink-2); letter-spacing: -0.01em; line-height: 1.2; flex: 1;
+  }
+  .cell.key .cell-number { color: var(--accent); font-style: italic; font-weight: 500; }
+  .cell.key .cell-title { color: var(--accent); font-weight: 600; }
+  .cell.key { background: var(--gold-bg); }
+  .cell.key:hover { background: #f0e5cf; }
+
+  /* 미니 일봉 세트 (5/6/7번) */
+  .cell.mini-set {
+    background: rgba(245, 236, 220, 0.35);
+    position: relative;
+  }
+  .cell.mini-set:hover {
+    background: rgba(245, 236, 220, 0.6);
+  }
+  .cell.mini-set::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--gold);
+    opacity: 0.4;
+  }
+  .cell.mini-set.first::after {
+    content: '미니 일봉 SET';
+    position: absolute;
+    top: 4px;
+    left: 12px;
+    font-family: var(--font-mono);
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    color: var(--gold);
+  }
+  .cell.mini-set.first {
+    padding-top: 22px;
+  }
+  .cell.mini-set:not(.first) {
+    padding-top: 14px;
+  }
+
+  /* 2번: 지수 동조화 토글 */
+  .index-toggle {
+    display: flex; flex-direction: column; gap: 4px;
+    margin-top: 2px; flex: 1; justify-content: flex-start;
+  }
+  .index-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 4px 8px; border: 1px solid var(--paper-line);
+    cursor: pointer; transition: all 0.15s;
+    -webkit-user-select: none; user-select: none;
+    font-family: var(--font-kr); font-size: 10.5px; color: var(--ink-3);
+  }
+  .index-row:hover { background: var(--canvas); }
+  .index-row.active { background: var(--ink-1); color: var(--paper); border-color: var(--ink-1); }
+  .index-row.active[data-tone="up"] { background: var(--approve); border-color: var(--approve); }
+  .index-row.active[data-tone="down"] { background: var(--accent); border-color: var(--accent); }
+  .index-tag {
+    font-family: var(--font-mono); font-size: 9px; color: var(--ink-4);
+    letter-spacing: 0.1em; text-transform: uppercase;
+  }
+  .index-row.active .index-tag { color: var(--ink-5); }
+
+  /* 3번: 진입 트리거 (10번 = 라/3분봉) */
+  .trigger-zone {
+    display: flex; flex-direction: column; gap: 5px;
+    margin-top: 2px; flex: 1;
+  }
+  .trigger-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 5px 8px; border: 1px solid var(--paper-line);
+    cursor: pointer; transition: all 0.15s;
+    -webkit-user-select: none; user-select: none;
+  }
+  .trigger-row:hover { background: var(--canvas); }
+  .trigger-checkbox {
+    width: 13px; height: 13px;
+    border: 1.5px solid var(--ink-3);
+    flex-shrink: 0; position: relative; transition: all 0.15s;
+  }
+  .trigger-row.active .trigger-checkbox {
+    background: var(--accent); border-color: var(--accent);
+  }
+  .trigger-row.active .trigger-checkbox::after {
+    content: ''; position: absolute; top: 0px; left: 3px;
+    width: 4px; height: 8px;
+    border: solid var(--paper); border-width: 0 1.5px 1.5px 0;
+    transform: rotate(45deg);
+  }
+  .trigger-text {
+    font-family: var(--font-kr); font-size: 11px; font-weight: 500;
+    color: var(--ink-2); flex: 1;
+  }
+  .trigger-row.active .trigger-text { color: var(--accent); font-weight: 600; }
+  .trigger-status {
+    margin-top: 4px; padding: 4px 8px; text-align: center;
+    font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    border: 1px solid var(--ink-4); color: var(--ink-3);
+    background: var(--paper); transition: all 0.3s;
+  }
+  .trigger-status.fire {
+    color: var(--paper); background: var(--accent); border-color: var(--accent);
+    box-shadow: 0 0 12px rgba(139, 26, 26, 0.3);
+  }
+
+  /* GRADES */
+  .grades {
+    display: flex; flex-direction: column; gap: 4px;
+    margin-top: 2px; flex: 1; overflow: hidden;
+  }
+  .grade-row {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    padding: 4px 9px; background: transparent;
+    border: 1px solid var(--paper-line);
+    cursor: pointer; transition: all 0.15s;
+    -webkit-user-select: none; user-select: none; gap: 10px;
+  }
+  .grade-row:hover { background: var(--canvas); border-color: var(--ink-4); }
+  .grade-letter {
+    font-family: var(--font-serif); font-size: 14px; font-weight: 500;
+    font-style: italic; color: var(--ink-2); flex-shrink: 0;
+    width: 14px; text-align: center;
+  }
+  /* 패턴 내용 */
+  .grade-detail {
+    font-family: var(--font-kr); font-size: 10px; color: var(--ink-3);
+    font-weight: 400; letter-spacing: -0.02em; line-height: 1.3;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  /* 점수 - 우측 끝 정렬 */
+  .grade-score {
+    font-family: var(--font-mono); font-size: 11px; font-weight: 600;
+    color: var(--ink-4); flex-shrink: 0;
+    font-feature-settings: 'tnum' 1;
+    min-width: 18px; text-align: right;
+  }
+  .grade-row.active { background: var(--ink-1); border-color: var(--ink-1); }
+  .grade-row.active .grade-letter,
+  .grade-row.active .grade-score { color: var(--paper); }
+  .grade-row.active .grade-detail { color: var(--ink-5); }
+  .grade-row.active[data-grade="S"] { background: var(--accent); border-color: var(--accent); }
+  .grade-row.active[data-grade="B"] { background: var(--ink-3); border-color: var(--ink-3); }
+
+  /* SIDE PANELS */
+  .side { display: flex; flex-direction: column; gap: 12px; min-height: 0; }
+  .panel {
+    background: var(--paper); border: 1px solid var(--ink-2);
+    flex: 1; display: flex; flex-direction: column; min-height: 0;
+  }
+  .panel-head {
+    padding: 9px 14px 7px; border-bottom: 1px solid var(--paper-line);
+    display: flex; align-items: baseline; justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .panel-title {
+    font-family: var(--font-serif); font-size: 16px; font-weight: 400;
+    font-style: italic; color: var(--ink-1); letter-spacing: -0.01em;
+  }
+  .panel-title.warn { color: var(--accent); }
+  .panel-num {
+    font-family: var(--font-mono); font-size: 9px; color: var(--ink-4);
+    letter-spacing: 0.15em;
+  }
+  .panel-body {
+    padding: 4px 12px 8px; flex: 1; overflow-y: auto;
+    display: flex; flex-direction: column;
+  }
+  .item {
+    display: flex; align-items: center; gap: 11px;
+    padding: 7px 4px; cursor: pointer; transition: all 0.15s;
+    border-bottom: 1px dotted var(--paper-line);
+    -webkit-user-select: none; user-select: none;
+  }
+  .item:last-child { border-bottom: none; }
+  .item:hover { padding-left: 8px; }
+  .checkmark {
+    width: 15px; height: 15px;
+    border: 1.5px solid var(--ink-3);
+    flex-shrink: 0; position: relative; transition: all 0.15s;
+  }
+  .item.checked .checkmark { background: var(--approve); border-color: var(--approve); }
+  .item.checked .checkmark::after {
+    content: ''; position: absolute; top: 1px; left: 4px;
+    width: 4px; height: 8px;
+    border: solid var(--paper); border-width: 0 1.5px 1.5px 0;
+    transform: rotate(45deg);
+  }
+  .item-text {
+    flex: 1; font-family: var(--font-kr); font-size: 12px;
+    font-weight: 500; color: var(--ink-2); letter-spacing: -0.01em;
+  }
+  .item.checked .item-text { color: var(--ink-1); }
+  .item-bonus {
+    font-family: var(--font-serif); font-style: italic;
+    font-size: 12px; font-weight: 400; color: var(--ink-4);
+  }
+  .item.checked .item-bonus { color: var(--approve); font-weight: 500; }
+
+  /* RESPONSIVE */
+  @media (max-height: 880px) {
+    body { padding: 12px 18px 10px; }
+    .container { gap: 10px; }
+    .masthead { padding-bottom: 10px; gap: 22px; }
+    .logo { font-size: 32px; }
+    .total-score { font-size: 52px; }
+    .total-label { font-size: 16px; }
+    .verdict-badge { font-size: 12px; padding: 7px 16px; min-width: 140px; }
+    .row-label { font-size: 26px; }
+    .cell { padding: 6px 10px 5px; }
+    .cell-number { font-size: 14px; }
+    .cell-title { font-size: 12px; }
+    .cell-header { margin-bottom: 5px; padding-bottom: 3px; }
+    .grade-row { padding: 3px 8px; gap: 6px; }
+    .grade-letter { font-size: 13px; }
+    .grade-score { font-size: 10px; }
+    .grade-detail { font-size: 9.5px; }
+    .grades { gap: 3px; }
+    .index-row { padding: 3px 7px; font-size: 10px; }
+    .index-tag { font-size: 8px; }
+    .index-toggle { gap: 3px; }
+    .trigger-row { padding: 4px 7px; gap: 7px; }
+    .trigger-text { font-size: 10.5px; }
+    .trigger-zone { gap: 4px; }
+    .trigger-status { padding: 3px 7px; font-size: 9px; }
+    .panel-title { font-size: 15px; }
+    .panel-head { padding: 7px 13px 5px; }
+    .panel-body { padding: 3px 11px 7px; }
+    .item { padding: 6px 4px; gap: 10px; }
+    .item-text { font-size: 11.5px; }
+    .checkmark { width: 14px; height: 14px; }
+  }
+
+  @media (max-height: 800px) {
+    .grade-row { padding: 2.5px 7px; }
+    .grade-letter { font-size: 12px; }
+    .grade-score { font-size: 9.5px; }
+    .grade-detail { font-size: 9px; }
+    .grades { gap: 2.5px; }
+    .total-score { font-size: 46px; }
+    .logo { font-size: 28px; }
+  }
+
+  @media (max-width: 1100px) {
+    html, body { height: auto; overflow: auto; }
+    body { height: auto; }
+    .main { grid-template-columns: 1fr; }
+    .hts-grid { grid-template-rows: repeat(4, minmax(180px, auto)); }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- MASTHEAD -->
+  <header class="masthead">
+    <div class="masthead-left">
+      <div class="meta-line">
+        <span class="meta-issue">Vol. III</span>
+        <span class="meta-divider"></span>
+        <span id="currentDate">—</span>
+      </div>
+      <div class="score-board">
+        <div class="score-display">
+          <span class="score-stage-label" id="stageLabel">자구점</span>
+          <span class="total-score" id="totalScore">0</span>
+          <span class="total-of" id="totalOf">/ 50</span>
+        </div>
+        <div class="stage-progress">
+          <div class="stage-track">
+            <div class="stage-fill" id="stageFill"></div>
+          </div>
+          <div class="stage-labels">
+            <span class="stage-mark" id="stage-jagujeom">자구점</span>
+            <span class="stage-mark" id="stage-jagujeomyuhwak">자구점유확</span>
+            <span class="stage-mark" id="stage-total">전체</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="masthead-center">
+      <div class="logo">HTS <span class="em">도면</span> 점수표</div>
+      <div class="logo-tagline">"원칙은 나를 지키는 법이다."</div>
+    </div>
+
+    <div class="masthead-right">
+      <div class="verdict-badge" id="verdict">대기</div>
+      <div class="cross-link-wrap">
+        <a href="../" class="cross-link" target="_blank" rel="noopener">
+          <span class="cross-link-meta">다음 단계</span>
+          <span class="cross-link-text">매수·고점 점수표 →</span>
+        </a>
+        <button class="reset-btn" onclick="resetAll()">RESET</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <section class="table-section">
+      <div class="section-label">
+        <span>Chart Layout · 16 Frames</span>
+        <span class="section-meta">자구점유확 — 5 essentials with detailed patterns</span>
+      </div>
+
+      <div class="hts-grid">
+
+        <!-- ROW 가 -->
+        <div class="cell row-label">
+          <div class="cell-header">
+            <span class="zone1-label">가</span>
+            <span class="cell-divider"></span>
+            <span class="cell-title">코스닥 일봉</span>
+          </div>
+        </div>
+
+        <!-- 가행 / 2열: 1번 주봉 -->
+        <div class="cell" data-cell="1" data-scores='{"S":3,"A":2}'>
+          <div class="cell-header"><span class="cell-number">01</span><span class="cell-divider"></span><span class="cell-title">주봉</span></div>
+        </div>
+
+        <!-- 5/6/7번: 미니 일봉 세트 -->
+        <div class="cell mini-set first" data-cell="5" data-scores='{"S":2,"A":1}'>
+          <div class="cell-header"><span class="cell-number">05</span><span class="cell-divider"></span><span class="cell-title">BB+VWAP</span></div>
+        </div>
+        <div class="cell mini-set" data-cell="6" data-scores='{"S":2,"A":1}'>
+          <div class="cell-header"><span class="cell-number">06</span><span class="cell-divider"></span><span class="cell-title">5-10학익진</span></div>
+        </div>
+        <div class="cell mini-set" data-cell="7" data-scores='{"S":2,"A":1}'>
+          <div class="cell-header"><span class="cell-number">07</span><span class="cell-divider"></span><span class="cell-title">중심선</span></div>
+        </div>
+
+        <!-- ROW 나 (1열에 지수 동조화) -->
+        <div class="zone1-functional" data-cell="8" data-type="index">
+          <div class="cell-header">
+            <span class="zone1-label">나</span>
+            <span class="cell-divider"></span>
+            <span class="cell-title">지수 동조화</span>
+          </div>
+          <div class="index-toggle" data-index-zone="na">
+            <div class="index-row" data-tone="up" data-val="up"><span>지수 강세</span><span class="index-tag">UP</span></div>
+            <div class="index-row" data-tone="neutral" data-val="neutral"><span>중립</span><span class="index-tag">FLAT</span></div>
+            <div class="index-row" data-tone="down" data-val="down"><span>지수 약세</span><span class="index-tag">DOWN</span></div>
+          </div>
+        </div>
+
+        <!-- 나행 / 2열: 2번 일봉 메인 (자) -->
+        <div class="cell key" data-cell="2" data-scores='{"S":25,"A":18,"B":10}' data-details='{"S":"ATH · Doji · 추세선2 · 3·5합성눌림","A":"추세선1 · Abs Bar · 맥타고 십이첫 · 맥삼 삼리단","B":"박스 돌파 · 약한 신호"}'>
+          <div class="cell-header">
+            <span class="cell-number">02</span>
+            <span class="cell-divider"></span>
+            <span class="cell-title">자 · 일봉 메인</span>
+          </div>
+        </div>
+
+        <!-- 8번 -->
+        <div class="cell" data-cell="8" data-scores='{"S":3,"A":2}'>
+          <div class="cell-header"><span class="cell-number">08</span><span class="cell-divider"></span><span class="cell-title">90분 ST</span></div>
+        </div>
+
+        <!-- 11번 (확) -->
+        <div class="cell key" data-cell="11" data-scores='{"S":10,"A":7,"B":4}' data-details='{"S":"BB·LRL 수축→확산","A":"BB 중심선 눌림","B":"BB 확장 중"}'>
+          <div class="cell-header">
+            <span class="cell-number">11</span>
+            <span class="cell-divider"></span>
+            <span class="cell-title">확 · BB 돌파</span>
+          </div>
+        </div>
+        <div class="cell" data-cell="14" data-scores='{"S":2,"A":1}'>
+          <div class="cell-header"><span class="cell-number">14</span><span class="cell-divider"></span><span class="cell-title">5일선 파동</span></div>
+        </div>
+
+        <!-- ROW 다 -->
+        <div class="cell row-label">
+          <div class="cell-header">
+            <span class="zone1-label">다</span>
+            <span class="cell-divider"></span>
+            <span class="cell-title">외인/기관 지수</span>
+          </div>
+        </div>
+
+        <!-- 다행 / 2열: 3번 90분봉 -->
+        <div class="cell" data-cell="3" data-scores='{"S":3,"A":2}'>
+          <div class="cell-header"><span class="cell-number">03</span><span class="cell-divider"></span><span class="cell-title">90분봉</span></div>
+        </div>
+
+        <div class="cell" data-cell="9" data-scores='{"S":3,"A":2}'>
+          <div class="cell-header"><span class="cell-number">09</span><span class="cell-divider"></span><span class="cell-title">30분 ST</span></div>
+        </div>
+        <div class="cell" data-cell="12" data-scores='{"S":2,"A":1}'>
+          <div class="cell-header"><span class="cell-number">12</span><span class="cell-divider"></span><span class="cell-title">1-3D 차트</span></div>
+        </div>
+        <div class="cell" data-cell="15" data-scores='{"S":3,"A":2}'>
+          <div class="cell-header"><span class="cell-number">15</span><span class="cell-divider"></span><span class="cell-title">3일선 파동 (35선)</span></div>
+        </div>
+
+        <!-- ROW 라 (1열에 3분봉 진입 트리거) -->
+        <div class="zone1-functional row-ra" data-type="trigger">
+          <div class="cell-header">
+            <span class="zone1-label">라</span>
+            <span class="cell-divider"></span>
+            <span class="cell-title">3분봉 진입 트리거</span>
+          </div>
+          <div class="trigger-zone">
+            <div class="trigger-row" data-trigger="ignition">
+              <div class="trigger-checkbox"></div>
+              <div class="trigger-text">점화봉 출현</div>
+            </div>
+            <div class="trigger-row" data-trigger="volume">
+              <div class="trigger-checkbox"></div>
+              <div class="trigger-text">거래량 동반</div>
+            </div>
+            <div class="trigger-row" data-trigger="rsi">
+              <div class="trigger-checkbox"></div>
+              <div class="trigger-text">RSI 40~50 눌림</div>
+            </div>
+            <div class="trigger-status" id="triggerStatus">— 대기</div>
+          </div>
+        </div>
+
+        <!-- 라행 / 2열: 4번 5분 20ma·GZ (구) -->
+        <div class="cell key" data-cell="4" data-scores='{"S":20,"A":14,"B":8}' data-details='{"S":"상승 N자 · GZ Break · GZ AT","A":"20ma PB · GZ PB","B":"GZ 근접 · 약한 흐름"}'>
+          <div class="cell-header">
+            <span class="cell-number">04</span>
+            <span class="cell-divider"></span>
+            <span class="cell-title">구 · 5분 20ma·GZ</span>
+          </div>
+        </div>
+
+        <!-- 10번 -->
+        <div class="cell" data-cell="10" data-scores='{"S":2,"A":1}'>
+          <div class="cell-header"><span class="cell-number">10</span><span class="cell-divider"></span><span class="cell-title">10분 그물망</span></div>
+        </div>
+
+        <!-- 13번 (점) -->
+        <div class="cell key" data-cell="13" data-scores='{"S":15,"A":11,"B":6}' data-details='{"S":"재점화 · GC · 파라 (3개 충족)","A":"2개 충족","B":"1개 충족"}'>
+          <div class="cell-header">
+            <span class="cell-number">13</span>
+            <span class="cell-divider"></span>
+            <span class="cell-title">점 · 1-3h 재점화</span>
+          </div>
+        </div>
+
+        <!-- 16번 (유) -->
+        <div class="cell key" data-cell="16" data-scores='{"S":10,"A":7,"B":4}' data-details='{"S":"양운 얇게 완만↑ · TK 2개 지지","A":"일목속검 · TK 1개 지지","B":"일목 위 유지"}'>
+          <div class="cell-header">
+            <span class="cell-number">16</span>
+            <span class="cell-divider"></span>
+            <span class="cell-title">유 · 일목</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SIDE -->
+    <aside class="side">
+
+      <div class="panel">
+        <div class="panel-head">
+          <div class="panel-title">보조 가점</div>
+          <div class="panel-num">No. 01</div>
+        </div>
+        <div class="panel-body">
+          <div class="item" data-bonus="sector" data-score="5">
+            <div class="checkmark"></div>
+            <div class="item-text">섹터 대장주</div>
+            <div class="item-bonus">+5</div>
+          </div>
+          <div class="item" data-bonus="golden" data-score="3">
+            <div class="checkmark"></div>
+            <div class="item-text">골든타임 09:00~30</div>
+            <div class="item-bonus">+3</div>
+          </div>
+          <div class="item" data-bonus="selected" data-score="7">
+            <div class="checkmark"></div>
+            <div class="item-text">전날 선별 5종목</div>
+            <div class="item-bonus">+7</div>
+          </div>
+          <div class="item" data-bonus="program" data-score="5">
+            <div class="checkmark"></div>
+            <div class="item-text">프로그램 순매수 양호</div>
+            <div class="item-bonus">+5</div>
+          </div>
+          <div class="item" data-bonus="nomargin" data-score="5">
+            <div class="checkmark"></div>
+            <div class="item-text">미수 미사용</div>
+            <div class="item-bonus">+5</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <div class="panel-title warn">최종 체크리스트</div>
+          <div class="panel-num">No. 02</div>
+        </div>
+        <div class="panel-body">
+          <div class="item" data-check="score80">
+            <div class="checkmark"></div>
+            <div class="item-text">매수 점수 80+</div>
+          </div>
+          <div class="item" data-check="highpoint">
+            <div class="checkmark"></div>
+            <div class="item-text">고점 점수 70-</div>
+          </div>
+          <div class="item" data-check="stoploss">
+            <div class="checkmark"></div>
+            <div class="item-text">손절가 설정</div>
+          </div>
+          <div class="item" data-check="holding">
+            <div class="checkmark"></div>
+            <div class="item-text">홀딩 기준선</div>
+          </div>
+        </div>
+      </div>
+
+    </aside>
+  </div>
+
+</div>
+
+<script>
+  const grades = {};
+  const bonus = {};
+  const indexTone = {};
+  const triggers = {};
+
+  const today = new Date();
+  const dateStr = today.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  document.getElementById('currentDate').textContent = dateStr;
+
+  const KEY_CELLS = ['2', '4', '11', '13', '16'];
+
+  // 점수 등급 셀
+  document.querySelectorAll('.cell[data-cell][data-scores]').forEach(cell => {
+    const cellNum = cell.dataset.cell;
+    const scores = JSON.parse(cell.dataset.scores);
+    const details = cell.dataset.details ? JSON.parse(cell.dataset.details) : null;
+    const isKey = KEY_CELLS.includes(cellNum);
+
+    const wrap = document.createElement('div');
+    wrap.className = 'grades';
+
+    const gradesToShow = isKey ? ['S', 'A', 'B'] : ['S', 'A'];
+
+    gradesToShow.forEach(grade => {
+      const row = document.createElement('div');
+      row.className = 'grade-row';
+      row.dataset.grade = grade;
+      
+      if (isKey && details && details[grade]) {
+        row.innerHTML = `
+          <span class="grade-letter">${grade}</span>
+          <span class="grade-detail">${details[grade]}</span>
+          <span class="grade-score">${scores[grade]}</span>
+        `;
+      } else {
+        row.innerHTML = `
+          <span class="grade-letter">${grade}</span>
+          <span class="grade-detail"></span>
+          <span class="grade-score">${scores[grade]}</span>
+        `;
+      }
+      
+      row.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (row.classList.contains('active')) {
+          row.classList.remove('active');
+          delete grades[cellNum];
+        } else {
+          cell.querySelectorAll('.grade-row').forEach(g => g.classList.remove('active'));
+          row.classList.add('active');
+          grades[cellNum] = grade;
+        }
+        updateTotal();
+      });
+      wrap.appendChild(row);
+    });
+
+    cell.appendChild(wrap);
+  });
+
+  // 지수 토글
+  document.querySelectorAll('.index-toggle').forEach(toggle => {
+    const zone = toggle.dataset.indexZone;
+    toggle.querySelectorAll('.index-row').forEach(row => {
+      row.addEventListener('click', () => {
+        const val = row.dataset.val;
+        if (row.classList.contains('active')) {
+          row.classList.remove('active');
+          delete indexTone[zone];
+        } else {
+          toggle.querySelectorAll('.index-row').forEach(r => r.classList.remove('active'));
+          row.classList.add('active');
+          indexTone[zone] = val;
+        }
+      });
+    });
+  });
+
+  // 진입 트리거
+  document.querySelectorAll('.trigger-row').forEach(row => {
+    row.addEventListener('click', () => {
+      const k = row.dataset.trigger;
+      if (row.classList.contains('active')) {
+        row.classList.remove('active');
+        delete triggers[k];
+      } else {
+        row.classList.add('active');
+        triggers[k] = true;
+      }
+      updateTriggerStatus();
+    });
+  });
+
+  function updateTriggerStatus() {
+    const status = document.getElementById('triggerStatus');
+    const count = Object.keys(triggers).length;
+    if (count >= 3) {
+      status.textContent = '🔥 진입 가능';
+      status.classList.add('fire');
+    } else if (count > 0) {
+      status.textContent = `⚡ ${count}/3 충족`;
+      status.classList.remove('fire');
+    } else {
+      status.textContent = '— 대기';
+      status.classList.remove('fire');
+    }
+  }
+
+  // 보조 가점
+  document.querySelectorAll('.item[data-bonus]').forEach(item => {
+    item.addEventListener('click', () => {
+      const k = item.dataset.bonus;
+      if (item.classList.contains('checked')) {
+        item.classList.remove('checked');
+        delete bonus[k];
+      } else {
+        item.classList.add('checked');
+        bonus[k] = parseFloat(item.dataset.score);
+      }
+      updateTotal();
+    });
+  });
+
+  document.querySelectorAll('.item[data-check]').forEach(item => {
+    item.addEventListener('click', () => item.classList.toggle('checked'));
+  });
+
+  function updateTotal() {
+    // 단계별 셀 정의
+    const JAGUJEOM = ['2', '4', '13'];        // 자/구/점
+    const JAGUJEOMYUHWAK = ['2', '4', '13', '16', '11']; // + 유/확
+    
+    // 입력된 셀 추적
+    const filledCells = Object.keys(grades);
+    const filledSet = new Set(filledCells);
+    
+    // 단계 자동 판별
+    const jagujeomFilled = JAGUJEOM.every(c => filledSet.has(c));
+    const allKeyFilled = JAGUJEOMYUHWAK.every(c => filledSet.has(c));
+    const hasOtherCells = filledCells.some(c => !JAGUJEOMYUHWAK.includes(c));
+    
+    let stage, stageMax;
+    if (allKeyFilled && hasOtherCells) {
+      stage = '전체';
+      stageMax = 130;
+    } else if (allKeyFilled) {
+      stage = '자구점유확';
+      stageMax = 80;
+    } else if (jagujeomFilled) {
+      stage = '자구점';
+      stageMax = 60;  // 25+20+15
+    } else {
+      stage = '자구점';
+      stageMax = 60;
+    }
+    
+    // 점수 합산
+    let total = 0;
+    document.querySelectorAll('.cell[data-cell][data-scores]').forEach(cell => {
+      const c = cell.dataset.cell;
+      if (grades[c]) {
+        // 단계별 필터: 자구점 단계면 자구점만 더함
+        if (stage === '자구점' && !JAGUJEOM.includes(c)) return;
+        if (stage === '자구점유확' && !JAGUJEOMYUHWAK.includes(c)) return;
+        total += JSON.parse(cell.dataset.scores)[grades[c]];
+      }
+    });
+    // 전체 단계만 보조 가점 포함
+    if (stage === '전체') {
+      Object.values(bonus).forEach(s => total += s);
+    }
+
+    // 표시 업데이트
+    const el = document.getElementById('totalScore');
+    const ofEl = document.getElementById('totalOf');
+    const stageLabel = document.getElementById('stageLabel');
+    const stageFill = document.getElementById('stageFill');
+    const verdict = document.getElementById('verdict');
+    
+    el.textContent = total;
+    ofEl.textContent = `/ ${stageMax}`;
+    stageLabel.textContent = stage;
+
+    // 진행 게이지
+    let fillWidth = 0;
+    if (stage === '자구점') {
+      fillWidth = jagujeomFilled ? 33 : (filledCells.filter(c => JAGUJEOM.includes(c)).length / 3) * 33;
+    } else if (stage === '자구점유확') {
+      fillWidth = 66;
+    } else if (stage === '전체') {
+      fillWidth = 100;
+    }
+    stageFill.style.width = fillWidth + '%';
+
+    // 단계 라벨 활성화
+    document.getElementById('stage-jagujeom').className = 'stage-mark ' + 
+      (stage === '자구점' ? 'active' : (jagujeomFilled ? 'completed' : ''));
+    document.getElementById('stage-jagujeomyuhwak').className = 'stage-mark ' +
+      (stage === '자구점유확' ? 'active' : (allKeyFilled ? 'completed' : ''));
+    document.getElementById('stage-total').className = 'stage-mark ' +
+      (stage === '전체' ? 'active' : '');
+
+    // 판정 (전체 점수 기준으로만)
+    el.className = 'total-score';
+    verdict.className = 'verdict-badge';
+
+    // 전체 점수 (모든 입력 합산) - 판정용
+    let fullTotal = 0;
+    document.querySelectorAll('.cell[data-cell][data-scores]').forEach(cell => {
+      const c = cell.dataset.cell;
+      if (grades[c]) fullTotal += JSON.parse(cell.dataset.scores)[grades[c]];
+    });
+    Object.values(bonus).forEach(s => fullTotal += s);
+
+    if (fullTotal >= 100) {
+      el.classList.add('strong');
+      verdict.classList.add('strong');
+      verdict.textContent = '★ 적극 매수';
+    } else if (fullTotal >= 80) {
+      el.classList.add('approved');
+      verdict.classList.add('approved');
+      verdict.textContent = '✓ 매수 승인';
+    } else if (fullTotal >= 70) {
+      el.classList.add('warn');
+      verdict.classList.add('caution');
+      verdict.textContent = '! 신중 검토';
+    } else if (fullTotal >= 40) {
+      verdict.classList.add('observe');
+      verdict.textContent = '… 관망';
+    } else if (fullTotal > 0) {
+      el.classList.add('danger');
+      verdict.classList.add('danger');
+      verdict.textContent = '✗ 매수 금지';
+    } else {
+      verdict.textContent = '대기';
+    }
+
+    const cb = document.querySelector('[data-check="score80"]');
+    if (cb) {
+      if (fullTotal >= 80) cb.classList.add('checked');
+      else cb.classList.remove('checked');
+    }
+  }
+
+  function resetAll() {
+    if (!confirm('모든 입력을 초기화하시겠습니까?')) return;
+    Object.keys(grades).forEach(k => delete grades[k]);
+    Object.keys(bonus).forEach(k => delete bonus[k]);
+    Object.keys(indexTone).forEach(k => delete indexTone[k]);
+    Object.keys(triggers).forEach(k => delete triggers[k]);
+    document.querySelectorAll('.grade-row').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.index-row').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.trigger-row').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.item').forEach(r => r.classList.remove('checked'));
+    updateTotal();
+    updateTriggerStatus();
+  }
+</script>
+</body>
+</html>
