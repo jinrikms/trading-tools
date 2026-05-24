@@ -719,7 +719,7 @@
         </div>
 
         <!-- 나행 / 2열: 2번 일봉 메인 (자) -->
-        <div class="cell key" data-cell="2" data-scores='{"S":25,"A":18,"B":10}' data-details='{"S":"ATH · Doji · 추세선2 · 3·5합성눌림","A":"추세선1 · Abs Bar · 맥타고 십이첫 · 맥삼 삼리단","B":"박스 돌파 · 약한 신호"}'>
+        <div class="cell key" data-cell="2" data-scores='{"S":25,"A":18,"B":10}' data-details='{"S":"ATH · Doji · 패턴","A":"5·10 터닝 · 3·5합성눌림","B":"지지저항 · 추세선 · 되돌림"}'>
           <div class="cell-header">
             <span class="cell-number">02</span>
             <span class="cell-divider"></span>
@@ -758,7 +758,7 @@
           <div class="cell-header"><span class="cell-number">03</span><span class="cell-divider"></span><span class="cell-title">90분봉</span></div>
         </div>
 
-        <div class="cell" data-cell="9" data-scores='{"S":3,"A":2}'>
+        <div class="cell" data-cell="9" data-scores='{"S":3,"A":2}' data-details='{"S":"Gold Pool 출현"}'>
           <div class="cell-header"><span class="cell-number">09</span><span class="cell-divider"></span><span class="cell-title">30분 ST</span></div>
         </div>
         <div class="cell" data-cell="12" data-scores='{"S":2,"A":1}'>
@@ -768,36 +768,32 @@
           <div class="cell-header"><span class="cell-number">15</span><span class="cell-divider"></span><span class="cell-title">3일선 파동 (35선)</span></div>
         </div>
 
-        <!-- ROW 라 (1열에 3분봉 진입 트리거) -->
+        <!-- ROW 라 (1열에 5분봉 진입 트리거) -->
         <div class="zone1-functional row-ra" data-type="trigger">
           <div class="cell-header">
             <span class="zone1-label">라</span>
             <span class="cell-divider"></span>
-            <span class="cell-title">3분봉 진입 트리거</span>
+            <span class="cell-title">5분봉 진입 트리거</span>
           </div>
           <div class="trigger-zone">
-            <div class="trigger-row" data-trigger="ignition">
+            <div class="trigger-row" data-trigger="sig">
               <div class="trigger-checkbox"></div>
-              <div class="trigger-text">점화봉 출현</div>
+              <div class="trigger-text">Sig 찐추세 및 GC</div>
             </div>
-            <div class="trigger-row" data-trigger="volume">
+            <div class="trigger-row" data-trigger="cci">
               <div class="trigger-checkbox"></div>
-              <div class="trigger-text">거래량 동반</div>
-            </div>
-            <div class="trigger-row" data-trigger="rsi">
-              <div class="trigger-checkbox"></div>
-              <div class="trigger-text">RSI 40~50 눌림</div>
+              <div class="trigger-text">CCI -100, 0 눌림</div>
             </div>
             <div class="trigger-status" id="triggerStatus">— 대기</div>
           </div>
         </div>
 
         <!-- 라행 / 2열: 4번 5분 20ma·GZ (구) -->
-        <div class="cell key" data-cell="4" data-scores='{"S":20,"A":14,"B":8}' data-details='{"S":"상승 N자 · GZ Break · GZ AT","A":"20ma PB · GZ PB","B":"GZ 근접 · 약한 흐름"}'>
+        <div class="cell key" data-cell="4" data-scores='{"S":20,"A":14,"B":8}' data-details='{"S":"상승N자 · GZ안착 · GZ홀드-Break","A":"쿼터선 눌림 · GZ눌림","B":"GZ 근접 · 약한 흐름"}'>
           <div class="cell-header">
             <span class="cell-number">04</span>
             <span class="cell-divider"></span>
-            <span class="cell-title">구 · 5분 20ma·GZ</span>
+            <span class="cell-title">구 · 7분 쿼터선·GZ</span>
           </div>
         </div>
 
@@ -952,7 +948,7 @@
       row.className = 'grade-row';
       row.dataset.grade = grade;
       
-      if (isKey && details && details[grade]) {
+      if (details && details[grade]) {
         row.innerHTML = `
           <span class="grade-letter">${grade}</span>
           <span class="grade-detail">${details[grade]}</span>
@@ -1036,11 +1032,11 @@
   function updateTriggerStatus() {
     const status = document.getElementById('triggerStatus');
     const count = Object.keys(triggers).length;
-    if (count >= 3) {
+    if (count >= 2) {
       status.textContent = '🔥 진입 가능';
       status.classList.add('fire');
     } else if (count > 0) {
-      status.textContent = `⚡ ${count}/3 충족`;
+      status.textContent = `⚡ ${count}/2 충족`;
       status.classList.remove('fire');
     } else {
       status.textContent = '— 대기';
